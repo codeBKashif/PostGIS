@@ -54,5 +54,11 @@ export async function getAuthToken(
     },
   });
 
+  if (response.statusCode !== 200) {
+    throw new Error(
+      `Failed to get auth token for role ${role}: ${response.statusCode} ${response.body}`,
+    );
+  }
+
   return response.json().access_token as string;
 }

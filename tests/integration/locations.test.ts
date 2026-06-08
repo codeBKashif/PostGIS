@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { UserRole } from '../../src/database/enums/user-role.enum.js';
 import { Location } from '../../src/database/entities/location.entity.js';
 import { forbiddenResponse, getAuthToken } from '../helper.js';
@@ -79,11 +79,15 @@ describe('Locations API', () => {
   let clientToken: string;
   let guestToken: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const app = await getTestApp();
     adminToken = await getAuthToken(app, UserRole.ADMIN);
     clientToken = await getAuthToken(app, UserRole.CLIENT);
     guestToken = await getAuthToken(app, UserRole.GUEST);
+  });
+
+  beforeEach(async () => {
+    const app = await getTestApp();
     nearestLocation = buildLocation({ radius: 100 });
     fartherLocation = buildNearbyLocation(nearestLocation);
 
