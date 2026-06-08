@@ -2,8 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { Client } from 'pg';
 
-const DEFAULT_TEST_DATABASE_URL =
-  'postgres://app:app_secret@localhost:5433/restaurants_test';
+const DEFAULT_TEST_DATABASE_URL = 'postgres://app:app_secret@localhost:5433/restaurants_test';
 
 export function getTestDatabaseUrl(): string {
   const testDatabaseUrl = process.env.TEST_DATABASE_URL ?? DEFAULT_TEST_DATABASE_URL;
@@ -37,7 +36,7 @@ async function ensureTestDatabaseExists(testDatabaseUrl: string): Promise<void> 
   }
 }
 
-async function runMigrations(testDatabaseUrl: string): Promise<void> {
+function runMigrations(testDatabaseUrl: string): void {
   const result = spawnSync('npm', ['run', 'typeorm', '--', 'migration:run'], {
     stdio: 'inherit',
     env: {
@@ -54,7 +53,7 @@ async function runMigrations(testDatabaseUrl: string): Promise<void> {
 export async function prepareTestDatabase(): Promise<void> {
   const testDatabaseUrl = getTestDatabaseUrl();
   await ensureTestDatabaseExists(testDatabaseUrl);
-  await runMigrations(testDatabaseUrl);
+  runMigrations(testDatabaseUrl);
 }
 
 const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);

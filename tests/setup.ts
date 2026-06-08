@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { faker } from '@faker-js/faker';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { afterAll, beforeAll } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { User } from '../src/database/entities/user.entity.js';
