@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # 1. Combined lightweight checks to save GitHub action runner minutes
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Code Linting and Formatting Check
+        run: npm run lint
+
+      - name: Build Application
+        run: npm run build
+
+  # 2. Integration test job with isolated service containers
+  test:
+    needs: checks # Only triggers if linting and building pass successfully
+    runs-on: ubuntu-latest
+
+    services:
+      # Ephemeral PostGIS database container
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app_secret
+          POSTGRES_DB: restaurants_test
+        ports:
+          - 5433:5432 # Maps host port 5433 to container port 5432
+        options: >-
+          --health-cmd "pg_isready -U app -d restaurants_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      # Ephemeral Redis container for your rate-limiting plugin
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgres://app:app_secret@localhost:5433/restaurants_test
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      JWT_SECRET: ci-test-secret
+      JWT_EXPIRES_IN: 1h
+      RATE_LIMIT_MAX: 1000
+      RATE_LIMIT_TIME_WINDOW: 1 minute
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run test suite
+        run: npm test

@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: restaurants-postgres
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app_secret
+      POSTGRES_DB: restaurants
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: restaurants-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: restaurants-api
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgres://app:app_secret@postgres:5432/restaurants
+      JWT_SECRET: my-secret-key
+      JWT_EXPIRES_IN: 1h
+      RATE_LIMIT_MAX: 100
+      RATE_LIMIT_TIME_WINDOW: 1 minute
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - '3000:3000'
+    command: >
+      sh -c "node node_modules/typeorm/cli.js migration:run -d dist/database/data-source.js && node dist/database/seeds/run-seeds.js && node dist/server.js"
+
+volumes:
+  postgres_data:
+  redis_data:
